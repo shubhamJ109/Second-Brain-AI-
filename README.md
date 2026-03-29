@@ -3,7 +3,7 @@
 A production-grade RAG (Retrieval Augmented Generation) application built with:
 - **Next.js 14** (App Router, TypeScript, TailwindCSS) — Frontend
 - **FastAPI + Python** — Backend
-- **LangChain + OpenAI** — AI layer
+- **LangChain + Google Gemini** — AI layer
 - **PostgreSQL + pgvector** — Vector database
 
 ---
@@ -28,7 +28,7 @@ second-brain-ai/
 │       │   └── schemas.py        ← Pydantic request/response shapes
 │       ├── services/
 │       │   ├── document_parser.py   ← PDF/DOCX/TXT → raw text
-│       │   ├── embedding_service.py ← text → OpenAI embeddings
+│       │   ├── embedding_service.py ← text → Gemini embeddings
 │       │   ├── ingestion_service.py ← full upload pipeline
 │       │   └── rag_service.py       ← full RAG query pipeline
 │       └── api/
@@ -70,7 +70,7 @@ User asks: "What are the main conclusions of my report?"
               │
               ▼
    1. EMBED QUERY
-      OpenAI converts the question → vector [0.02, -0.14, ...]
+      Google Gemini converts the question → vector [0.02, -0.14, ...]
 
               │
               ▼
@@ -87,7 +87,7 @@ User asks: "What are the main conclusions of my report?"
 
               │
               ▼
-   4. LLM CALL (GPT-4o-mini)
+   4. LLM CALL (Gemini 1.5 Flash)
       Generate an answer GROUNDED IN YOUR DOCUMENTS
 
               │
@@ -102,7 +102,7 @@ User asks: "What are the main conclusions of my report?"
 
 ### Prerequisites
 - Docker Desktop installed
-- OpenAI API key
+- Google Gemini API key
 
 ### Steps
 
@@ -111,8 +111,8 @@ User asks: "What are the main conclusions of my report?"
 git clone <your-repo>
 cd second-brain-ai
 
-# 2. Set your OpenAI key as an environment variable
-export OPENAI_API_KEY=sk-...
+# 2. Set your Gemini key as an environment variable
+export GEMINI_API_KEY=AIza...
 
 # 3. Start everything
 docker compose up --build
@@ -160,7 +160,7 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add your GEMINI_API_KEY
 
 # Start the backend server
 uvicorn app.main:app --reload --port 8000
@@ -255,13 +255,13 @@ DELETE /api/documents/{id}
 ### Backend `.env`
 | Variable | Description | Default |
 |---|---|---|
-| `OPENAI_API_KEY` | Your OpenAI API key | required |
+| `GEMINI_API_KEY` | Your Google Gemini API key | required |
 | `DATABASE_URL` | PostgreSQL connection string | required |
 | `CHUNK_SIZE` | Characters per text chunk | 1000 |
 | `CHUNK_OVERLAP` | Overlap between chunks | 200 |
 | `RETRIEVAL_TOP_K` | Chunks retrieved per query | 5 |
-| `EMBEDDING_MODEL` | OpenAI embedding model | text-embedding-3-small |
-| `LLM_MODEL` | OpenAI chat model | gpt-4o-mini |
+| `EMBEDDING_MODEL` | Gemini embedding model | models/text-embedding-004 |
+| `LLM_MODEL` | Gemini chat model | gemini-1.5-flash |
 
 ### Frontend `.env.local`
 | Variable | Description |
@@ -280,11 +280,11 @@ DELETE /api/documents/{id}
 - Increase `CHUNK_OVERLAP` to prevent context splitting at boundaries
 
 **Too slow?**
-- Use `gpt-4o-mini` (already default — fast and cheap)
+- Use `gemini-1.5-flash` (already default — fast and cheap)
 - Decrease `RETRIEVAL_TOP_K`
 
 **Want better quality?**
-- Switch `LLM_MODEL` to `gpt-4o` for complex reasoning
+- Switch `LLM_MODEL` to `gemini-1.5-pro` for complex reasoning
 
 ---
 

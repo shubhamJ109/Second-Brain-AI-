@@ -6,8 +6,8 @@ ORM table definitions.
   documents        → one row per uploaded file
   document_chunks  → many rows per document (one per text chunk)
 
-The `embedding` column uses pgvector's VECTOR type to store 1536-dimensional
-float arrays (OpenAI text-embedding-3-small outputs 1536 dimensions).
+The `embedding` column uses pgvector's VECTOR type to store 3072-dimensional
+float arrays (Google Gemini text-embedding-004 outputs 3072 dimensions).
 """
 
 import uuid
@@ -55,7 +55,7 @@ class DocumentChunk(Base):
     # Position of this chunk within the document (for ordering citations)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # The embedding vector — 768 dims for text-embedding-004
+    # The embedding vector — 3072 dims for text-embedding-004
     # pgvector stores this as a compact binary array and indexes it for fast search
     embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=True)
 

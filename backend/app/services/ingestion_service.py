@@ -9,7 +9,7 @@ Orchestrates the full Document Ingestion Pipeline:
   4. Store   — save document metadata + chunks to PostgreSQL
 
 CONCEPT — Why chunk documents?
-LLMs have a limited context window (e.g. 128k tokens for GPT-4o).
+LLMs have a limited context window (e.g. 1 million+ tokens for Gemini 1.5).
 A 200-page PDF might have 150,000 tokens — far too large to pass in one go.
 Chunking splits the document into manageable pieces so we can:
   • Store each piece with its embedding
@@ -54,8 +54,8 @@ async def ingest_document(file: UploadFile, db: AsyncSession) -> DocumentRespons
         raise ValueError("Document produced no text chunks after splitting.")
 
     # ── Step 3: Embed ─────────────────────────────────────────────────────────
-    # embed_texts sends all chunks to OpenAI in one (batched) API call.
-    # Each chunk becomes a list[float] of length 1536.
+    # embed_texts sends all chunks to Google Gemini in one (batched) API call.
+    # Each chunk becomes a list[float] of length 3072 (text-embedding-004).
     embeddings: list[list[float]] = await embed_texts(chunks)
 
     # ── Step 4: Store ─────────────────────────────────────────────────────────
