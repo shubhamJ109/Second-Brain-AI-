@@ -1,65 +1,54 @@
-// src/components/chat/ChatWindow.tsx
-// Scrollable list of chat messages with auto-scroll to bottom.
-
-"use client";
-
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { ChatMessage } from "./ChatMessage";
-import type { ChatMessage as ChatMessageType } from "@/types";
+import { Brain, Sparkles, Loader2 } from "lucide-react";
 
 interface Props {
-  messages: ChatMessageType[];
+  messages: any[];
   isLoading: boolean;
+  onSend: (message: string) => void;
 }
 
-export function ChatWindow({ messages, isLoading }: Props) {
+export const ChatWindow: React.FC<Props> = ({ messages, isLoading, onSend }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  if (messages.length === 0) {
+  if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400">
-        <div className="text-5xl mb-4">🧠</div>
-        <h3 className="text-lg font-semibold text-gray-600 mb-2">Second Brain AI</h3>
-        <p className="text-sm max-w-xs">
-          Upload documents on the left, then ask questions here.
-          The AI will answer using only your documents.
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-500/5 flex items-center justify-center border border-emerald-500/10 mb-6">
+          <Sparkles className="w-8 h-8 text-emerald-500/40" />
+        </div>
+        <h2 className="text-xl font-bold text-white tracking-tight mb-2">How can I help you today?</h2>
+        <p className="text-sm text-white/40 max-w-sm font-medium leading-relaxed">
+          Ask a question about your uploaded documents or explore your library with high-precision RAG.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-6">
-      {messages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
-      ))}
-
-      {/* Typing indicator */}
-      {isLoading && (
-        <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-            AI
-          </div>
-          <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-            <div className="flex gap-1 items-center h-4">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
+    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="flex flex-col min-h-full">
+        {messages.map((m: any) => (
+          <ChatMessage key={m.id} message={m} onSuggestClick={onSend} />
+        ))}
+        {isLoading && (
+          <div className="flex w-full px-8 py-6 bg-emerald-500/[0.02]">
+            <div className="max-w-3xl mx-auto flex gap-6 w-full">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </div>
+              <div className="flex items-center gap-1.5 py-1">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-500/40">Thinking...</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      <div ref={bottomRef} />
+        )}
+        <div ref={bottomRef} className="h-8" />
+      </div>
     </div>
   );
-}
+};

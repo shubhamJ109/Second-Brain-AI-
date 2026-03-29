@@ -4,35 +4,65 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { sendChatMessage } from "@/lib/api";
 import type { ChatMessage } from "@/types";
 
-export function useChat(selectedDocIds: string[]) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+const STORAGE_KEY = "second_brain_chat_sessions";
+
+export function useChat(activeDocId: string | null) {
+  const sessionId = activeDocId || "global";
+  
+  // State for all sessions
+  const [sessions, setSessions] = useState<Record<string, ChatMessage[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setSessions(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load sessions", e);
+      }
+    }
+  }, []);
+
+  // Save to localStorage when sessions change
+  useEffect(() => {
+    if (Object.keys(sessions).length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    }
+  }, [sessions]);
+
+  const messages = sessions[sessionId] || [];
 
   const sendMessage = useCallback(
     async (query: string) => {
       if (!query.trim() || isLoading) return;
 
-      // Optimistically add the user message to the UI immediately
       const userMessage: ChatMessage = {
         id: uuidv4(),
         role: "user",
         content: query,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, userMessage]);
+
+      setSessions((prev) => ({
+        ...prev,
+        [sessionId]: [...(prev[sessionId] || []), userMessage],
+      }));
+      
       setIsLoading(true);
       setError(null);
 
       try {
         const response = await sendChatMessage({
           query,
-          document_ids: selectedDocIds.length > 0 ? selectedDocIds : undefined,
+          document_ids: activeDocId ? [activeDocId] : undefined,
         });
 
         const assistantMessage: ChatMessage = {
@@ -40,24 +70,31 @@ export function useChat(selectedDocIds: string[]) {
           role: "assistant",
           content: response.answer,
           sources: response.sources,
+          suggested_questions: response.suggested_questions,
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, assistantMessage]);
+
+        setSessions((prev) => ({
+          ...prev,
+          [sessionId]: [...(prev[sessionId] || []), assistantMessage],
+        }));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
-        // Remove the user message if the request failed
-        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+        // We could also remove the user message here if we want to be strict
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, selectedDocIds]
+    [isLoading, activeDocId, sessionId]
   );
 
   const clearChat = useCallback(() => {
-    setMessages([]);
+    setSessions((prev) => ({
+      ...prev,
+      [sessionId]: [],
+    }));
     setError(null);
-  }, []);
+  }, [sessionId]);
 
   return { messages, isLoading, error, sendMessage, clearChat };
 }

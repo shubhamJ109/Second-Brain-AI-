@@ -11,6 +11,7 @@ This file:
   • Exposes a health-check endpoint
 """
 
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -35,6 +36,10 @@ async def lifespan(app: FastAPI):
     In production you'd use Alembic migrations instead — but auto-create
     is fine for local development.
     """
+    # Ensure the upload directory exists
+    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    print(f"✅ Upload directory ready: {settings.upload_dir}")
+
     async with engine.begin() as conn:
         # CREATE TABLE IF NOT EXISTS for all models registered with Base
         await conn.run_sync(Base.metadata.create_all)
@@ -45,8 +50,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Second Brain AI",
-    description="Chat with your documents using RAG + OpenAI",
+    title="Second Brain AI (Gemini Powered)",
+    description="Backend API for Document Ingestion and RAG using Google Gemini models.",
     version="1.0.0",
     lifespan=lifespan,
 )

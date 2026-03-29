@@ -55,9 +55,9 @@ class DocumentChunk(Base):
     # Position of this chunk within the document (for ordering citations)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # The embedding vector — 1536 dims for text-embedding-3-small
+    # The embedding vector — 768 dims for text-embedding-004
     # pgvector stores this as a compact binary array and indexes it for fast search
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

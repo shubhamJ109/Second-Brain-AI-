@@ -24,6 +24,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   sources?: CitationSource[];
+  suggested_questions?: string[];
   timestamp: Date;
 }
 
@@ -35,6 +36,7 @@ export interface ChatRequest {
 export interface ChatResponse {
   answer: string;
   sources: CitationSource[];
+  suggested_questions: string[];
   query: string;
 }
 

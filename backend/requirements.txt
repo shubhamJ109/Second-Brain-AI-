@@ -5,9 +5,9 @@ python-multipart==0.0.9       # required for file uploads
 
 # ─── AI / LLM Layer ──────────────────────────────────────────────────────────
 langchain==0.2.1
-langchain-openai==0.1.8
+langchain-google-genai>=1.0.6
 langchain-community==0.2.1
-openai==1.30.1
+google-generativeai>=0.5.2,<0.6.0
 
 # ─── Document Parsers ────────────────────────────────────────────────────────
 pypdf==4.2.0                  # PDF parsing
@@ -23,4 +23,3 @@ alembic==1.13.1               # database migrations
 pydantic==2.7.1               # data validation (FastAPI uses this internally)
 pydantic-settings==2.3.0      # .env file loading
 python-dotenv==1.0.1
-tiktoken==0.7.0               # token counting for OpenAI models

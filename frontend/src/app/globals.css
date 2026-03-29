@@ -1,7 +1,62 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-html, body {
-  height: 100%;
+:root {
+  --background: #0a0a0b;
+  --foreground: #ffffff;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground selection:bg-emerald-500/30 overflow-hidden h-full antialiased font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer components {
+  /* Glassmorphism Classes */
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-md border border-white/[0.05];
+  }
+
+  .glass-premium {
+    @apply bg-white/[0.01] backdrop-blur-lg border border-white/[0.05] shadow-2xl;
+  }
+
+  .emerald-glow {
+    @apply shadow-[0_0_20px_-5px_rgba(16,185,129,0.3)] border-emerald-500/50;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

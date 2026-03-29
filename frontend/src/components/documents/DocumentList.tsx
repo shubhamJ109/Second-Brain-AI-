@@ -1,114 +1,102 @@
-// src/components/documents/DocumentList.tsx
-// Displays uploaded documents with selection checkboxes and delete button.
+import React from "react";
+import { FileText, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 
-"use client";
-
-import type { Document } from "@/types";
+interface Document {
+  id: string;
+  filename: string;
+  file_type: string;
+  file_size: number;
+}
 
 interface Props {
   documents: Document[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
+  activeId: string | null;
+  onSelect: (id: string | null) => void;
   onDelete: (id: string) => void;
   isLoading: boolean;
 }
 
-const FILE_ICONS: Record<string, string> = {
-  pdf: "📕",
-  docx: "📘",
-  txt: "📄",
-};
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-export function DocumentList({ documents, selectedIds, onToggle, onDelete, isLoading }: Props) {
+export const DocumentList: React.FC<Props> = ({
+  documents,
+  activeId,
+  onSelect,
+  onDelete,
+  isLoading,
+}) => {
   if (isLoading) {
     return (
-      <div className="p-4 space-y-2">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />
-        ))}
+      <div className="flex flex-col items-center justify-center py-12 opacity-40">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-500 mb-2" />
+        <p className="text-[10px] uppercase tracking-widest font-bold">Syncing Library...</p>
       </div>
     );
   }
 
   if (documents.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-400 text-sm">
-        <p className="text-2xl mb-2">📭</p>
-        <p>No documents yet. Upload one above.</p>
+      <div className="flex flex-col items-center justify-center py-12 px-6 text-center border border-dashed border-white/5 rounded-xl bg-white/[0.01]">
+        <FileText className="w-8 h-8 text-white/10 mb-3" />
+        <p className="text-xs text-white/40 font-medium">Your library is empty.</p>
+        <p className="text-[10px] text-white/20 mt-1">Upload a PDF or image to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-y-auto max-h-[calc(100vh-280px)]">
-      <p className="px-4 pb-2 text-xs text-gray-400 font-medium uppercase tracking-wide">
-        {selectedIds.length > 0
-          ? `${selectedIds.length} of ${documents.length} selected`
-          : `${documents.length} document${documents.length !== 1 ? "s" : ""}`}
-      </p>
-
-      <ul className="px-2 space-y-1">
-        {documents.map((doc) => {
-          const isSelected = selectedIds.includes(doc.id);
-          return (
-            <li
-              key={doc.id}
-              className={`
-                group flex items-center gap-3 p-3 rounded-lg cursor-pointer
-                transition-colors duration-150
-                ${isSelected ? "bg-blue-50 border border-blue-200" : "hover:bg-gray-50 border border-transparent"}
-              `}
-              onClick={() => onToggle(doc.id)}
-            >
-              {/* Checkbox */}
-              <div
-                className={`
-                  w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
-                  ${isSelected ? "bg-blue-500 border-blue-500" : "border-gray-300"}
-                `}
-              >
-                {isSelected && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                  </svg>
+    <div className="space-y-2 mt-4">
+      {documents.map((doc) => {
+        const isActive = doc.id === activeId;
+        return (
+          <div
+            key={doc.id}
+            onClick={() => onSelect(isActive ? null : doc.id)}
+            className={`
+              group relative p-3 rounded-xl border transition-all duration-300 cursor-pointer
+              ${isActive 
+                ? "bg-emerald-500/10 border-emerald-500/30 emerald-glow" 
+                : "bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]"}
+            `}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`
+                p-2 rounded-lg transition-colors
+                ${isActive ? "bg-emerald-500/20" : "bg-white/5 group-hover:bg-white/10"}
+              `}>
+                {isActive ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <FileText className="w-4 h-4 text-white/40 group-hover:text-white/60" />
                 )}
               </div>
-
-              {/* Icon + info */}
-              <span className="text-xl">{FILE_ICONS[doc.file_type] ?? "📄"}</span>
+              
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{doc.filename}</p>
-                <p className="text-xs text-gray-400">
-                  {formatSize(doc.file_size)} · {doc.chunk_count} chunks
+                <p className="text-xs font-semibold text-white/80 truncate pr-6">
+                  {doc.filename}
                 </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[9px] uppercase font-bold text-white/20 tracking-wider">
+                    {doc.file_type}
+                  </span>
+                  <span className="text-[9px] text-white/10">•</span>
+                  <span className="text-[9px] text-white/20">
+                    {(doc.file_size / 1024).toFixed(1)} KB
+                  </span>
+                </div>
               </div>
 
-              {/* Delete button */}
               <button
-                onClick={(e) => { e.stopPropagation(); onDelete(doc.id); }}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1 rounded"
-                title="Delete document"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(doc.id);
+                }}
+                className="absolute right-2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-400 text-white/20 rounded-lg transition-all"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      {selectedIds.length === 0 && documents.length > 0 && (
-        <p className="px-4 pt-3 pb-2 text-xs text-gray-400 italic">
-          ✓ Select documents to restrict search, or leave all unchecked to search everything.
-        </p>
-      )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
-}
+};

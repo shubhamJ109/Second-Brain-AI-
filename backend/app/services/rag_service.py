@@ -20,7 +20,7 @@ With RAG:
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import SystemMessage, HumanMessage
 
 from app.models.document import Document, DocumentChunk
@@ -31,25 +31,33 @@ from app.core.config import get_settings
 settings = get_settings()
 
 # Singleton LLM client
-_llm = ChatOpenAI(
+_llm = ChatGoogleGenerativeAI(
     model=settings.llm_model,
-    openai_api_key=settings.openai_api_key,
+    google_api_key=settings.gemini_api_key,
     temperature=0.2,  # lower = more factual, less creative
-    streaming=False,
 )
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 # This tells the LLM how to behave. A good system prompt is crucial for
 # keeping answers grounded in the retrieved context.
-SYSTEM_PROMPT = """You are a helpful AI assistant that answers questions based \
-on the provided document context.
+SYSTEM_PROMPT = """You are a highly sophisticated Research Assistant inspired by systems like NotebookLM. \
+Your goal is to provide deep, contextual insights based on the provided documents.
 
 Rules:
-1. ONLY answer based on the provided context. Do not use prior knowledge.
-2. If the context does not contain enough information to answer, say so clearly.
-3. Be concise and precise. Quote the source when useful.
-4. If multiple documents are relevant, synthesize their information.
-5. Always maintain a helpful, professional tone."""
+1. **Synthesize & Structure**: Do not just repeat facts. Synthesize information across all provided sources. Use a clear Markdown hierarchy with headers (###), bolding, and bullet points.
+2. **Context-Only**: Your knowledge is strictly limited to the provided document context. If the answer isn't there, say you don't know based on the current context.
+3. **Citations**: Be specific and professional. Mention the sources implicitly in your narrative when possible.
+4. **Follow-up Interaction**: At the very end of your response, you MUST provide exactly 3 suggested follow-up questions that would help the user explore the topic deeper.
+
+Your response MUST follow this exact format:
+[ANSWER]
+(Your detailed, structured markdown response here...)
+
+[QUESTIONS]
+- (Question 1)
+- (Question 2)
+- (Question 3)
+"""
 
 
 async def run_rag_pipeline(request: ChatRequest, db: AsyncSession) -> ChatResponse:
@@ -95,9 +103,29 @@ Please answer the question based on the context above."""
         HumanMessage(content=user_message),
     ]
     response = await _llm.ainvoke(messages)
-    answer_text = response.content
+    raw_content = response.content
 
-    # ── Step 5: Build citation objects ────────────────────────────────────────
+    # ── Step 5: Parse Answer & Questions ──────────────────────────────────────
+    answer_text = raw_content
+    suggested_questions = []
+
+    if "[QUESTIONS]" in raw_content:
+        parts = raw_content.split("[QUESTIONS]")
+        # Take everything before the [QUESTIONS] tag as the answer
+        answer_text = parts[0].replace("[ANSWER]", "").strip()
+        
+        # Extract questions from the second part
+        questions_block = parts[1].strip()
+        suggested_questions = [
+            q.strip("- ").strip() 
+            for q in questions_block.split("\n") 
+            if q.strip().startswith("-") or q.strip().startswith("1.") or q.strip().startswith("2.") or q.strip().startswith("3.")
+        ][:3]
+    else:
+        # Fallback if the tag is missing but formatting is present
+        answer_text = raw_content.replace("[ANSWER]", "").strip()
+
+    # ── Step 6: Build citation objects ────────────────────────────────────────
     sources = [
         CitationSource(
             document_id=chunk["document_id"],
@@ -112,6 +140,7 @@ Please answer the question based on the context above."""
     return ChatResponse(
         answer=answer_text,
         sources=sources,
+        suggested_questions=suggested_questions,
         query=request.query,
     )
 

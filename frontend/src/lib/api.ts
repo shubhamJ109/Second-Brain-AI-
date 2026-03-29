@@ -9,7 +9,8 @@ import type {
   UploadResponse,
 } from "@/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+// This matches the rewrite in next.config.js for proxying.
+const BASE_URL = "/api";
 
 // ── Generic request helper ────────────────────────────────────────────────────
 
@@ -26,6 +27,11 @@ async function request<T>(
     // Try to parse error detail from FastAPI's standard error response
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail ?? "An unknown error occurred");
+  }
+
+  // Handle '204 No Content' properly - it won't have a body to parse as JSON
+  if (res.status === 204) {
+    return {} as T;
   }
 
   return res.json() as Promise<T>;

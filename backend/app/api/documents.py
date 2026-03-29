@@ -7,16 +7,19 @@ Document-related API endpoints:
   DELETE /documents/{id}  — delete a document and its chunks
 """
 
+import os
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 from app.core.database import get_db
 from app.models.document import Document
 from app.models.schemas import UploadResponse, DocumentListResponse, DocumentResponse
 from app.services.ingestion_service import ingest_document
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+settings = get_settings()
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -53,7 +56,7 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
 async def delete_document(document_id: str, db: AsyncSession = Depends(get_db)):
     """
     Delete a document and all its chunks.
-    Cascade delete in the DB handles removing chunks automatically.
+    Also removes the original file from the local uploads/ directory.
     """
     result = await db.execute(select(Document).where(Document.id == document_id))
     doc = result.scalar_one_or_none()
@@ -61,5 +64,27 @@ async def delete_document(document_id: str, db: AsyncSession = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
+    # 1. Attempt to delete from filesystem first
+    if settings.upload_dir:
+        try:
+            # Try new format first: "uuid.ext"
+            file_path = os.path.join(settings.upload_dir, f"{doc.id}.{doc.file_type}")
+            
+            # Fallback to old format: "uuidext"
+            if not os.path.exists(file_path):
+                old_format_path = os.path.join(settings.upload_dir, f"{doc.id}{doc.file_type}")
+                if os.path.exists(old_format_path):
+                    file_path = old_format_path
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"🗑️ Deleted file from disk: {file_path}")
+            else:
+                print(f"ℹ️ File not found on disk, skipping cleanup.")
+        except Exception as e:
+            # We don't want to block the DB delete if disk cleanup fails
+            print(f"⚠️ Warning: Could not delete file from disk: {e}")
+
+    # 2. Delete from database (with cascade delete for DocumentChunk)
     await db.delete(doc)
-    # Commit happens in get_db context manager
+    # Commit is handled by the get_db context manager in core/database.py

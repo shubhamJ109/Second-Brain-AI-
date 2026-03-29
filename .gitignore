@@ -1,0 +1,32 @@
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.settings/
+.classpath
+
+# OS files
+.DS_Store
+Thumbs.db
+.fseventsd
+.Spotlight-V100
+.Trashes
+
+# Environment files (redundant but safe)
+.env
+.env.local
+.env.*.local
+
+# Project specific
+venv/
+node_modules/
+dist/
+build/
+coverage/
+
+# Docker
+.dockerdata/
+pg_data/
+db_data/

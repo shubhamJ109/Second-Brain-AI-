@@ -17,6 +17,7 @@ Chunking splits the document into manageable pieces so we can:
   • Stay within the LLM's context limit
 """
 
+from pathlib import Path
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -67,6 +68,19 @@ async def ingest_document(file: UploadFile, db: AsyncSession) -> DocumentRespons
     )
     db.add(doc)
     await db.flush()  # flush to get doc.id without committing yet
+
+    # ── Step 4: Save Original File to Disk ────────────────────────────────────
+    # Save the original binary file content to the local uploads/ folder.
+    # This allows you to see the actual document in your filesystem.
+    upload_path = Path(settings.upload_dir) / f"{doc.id}.{file_ext}"
+    
+    # Reset the file pointer to the beginning since parse_document might have read it
+    await file.seek(0)
+    file_content = await file.read()
+    
+    with open(upload_path, "wb") as f:
+        f.write(file_content)
+    print(f"✅ Local file saved: {upload_path}")
 
     # Create one DocumentChunk row per chunk
     chunk_objects = [

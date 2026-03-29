@@ -50,6 +50,7 @@ class ChatResponse(BaseModel):
     """Full response including the answer and supporting sources."""
     answer: str
     sources: list[CitationSource]
+    suggested_questions: list[str] = []
     query: str
 
 
