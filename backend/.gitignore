@@ -100,7 +100,7 @@ ipython_config.py
 .env
 .env.local
 .env.testing
-.env.example
+
 
 # VS Code
 .vscode/
