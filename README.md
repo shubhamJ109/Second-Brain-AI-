@@ -1,3 +1,5 @@
+# live on : https://second-brain-ai-osgv.vercel.app/
+
 # 🧠 Second Brain AI — Chat With Your Documents
 
 A production-grade RAG (Retrieval Augmented Generation) application built with:
